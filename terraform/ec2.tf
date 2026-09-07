@@ -33,8 +33,8 @@ module "web_server" {
 }
 
 module "ansible_server" {
-  source  = "terraform-aws-modules/ec2-instance/aws"
-  version = "~> 6.0"
+  source                 = "terraform-aws-modules/ec2-instance/aws"
+  version                = "~> 6.0"
   name                   = "ansible-server"
   ami                    = data.aws_ami.my_ami.id
   instance_type          = "t3.micro"
@@ -42,14 +42,14 @@ module "ansible_server" {
   create_security_group  = false
   vpc_security_group_ids = [aws_security_group.private.id]
   key_name               = "wan-adri-key"
-  private_ip = "10.0.0.135"
-  iam_instance_profile = data.aws_iam_instance_profile.my_ssm_profile.name
+  private_ip             = "10.0.0.135"
+  iam_instance_profile   = aws_iam_instance_profile.ansible.name
   tags                   = { Name = "ansible-server" }
 }
 
 module "monitoring_server" {
-  source  = "terraform-aws-modules/ec2-instance/aws"
-  version = "~> 6.0"
+  source                 = "terraform-aws-modules/ec2-instance/aws"
+  version                = "~> 6.0"
   name                   = "monitoring-server"
   ami                    = data.aws_ami.my_ami.id
   instance_type          = "t3.micro"
@@ -57,7 +57,7 @@ module "monitoring_server" {
   create_security_group  = false
   vpc_security_group_ids = [aws_security_group.private.id]
   key_name               = "wan-adri-key"
-  private_ip = "10.0.0.136"
-  iam_instance_profile = data.aws_iam_instance_profile.my_ssm_profile.name
+  private_ip             = "10.0.0.136"
+  iam_instance_profile   = aws_iam_instance_profile.monitoring.name
   tags                   = { Name = "monitoring-server" }
 }
