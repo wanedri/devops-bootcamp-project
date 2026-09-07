@@ -1,0 +1,62 @@
+# ---------- Terraform ----------
+# Provider binaries and module cache - hundreds of MB, never commit
+**/.terraform/*
+
+# State files. Yours live in S3, but a failed init or a `-backend=false`
+# run can still drop them locally. They contain plaintext secrets.
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+
+# Crash logs
+crash.log
+crash.*.log
+
+# Variable files often hold credentials, IPs, account IDs.
+# Commit a *.tfvars.example instead if you need to share the shape.
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+
+# CLI config that may contain credentials
+.terraformrc
+terraform.rc
+
+# Saved plan output - can contain sensitive values
+*.tfplan
+*.tfplan.*
+
+# NOTE: .terraform.lock.hcl is deliberately NOT ignored.
+# It pins provider versions and SHOULD be committed.
+
+# ---------- Ansible ----------
+*.retry
+.vault_pass
+.vault_pass.txt
+vault_password_file
+# Uncomment if you generate inventory from Terraform outputs:
+# ansible/inventory/hosts.generated
+
+# ---------- Secrets / keys ----------
+*.pem
+*.key
+*.ppk
+id_rsa
+id_rsa.*
+id_ed25519
+id_ed25519.*
+.env
+.env.*
+!.env.example
+credentials
+aws_credentials
+
+# ---------- Editor / OS ----------
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
