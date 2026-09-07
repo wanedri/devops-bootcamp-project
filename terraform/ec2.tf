@@ -8,6 +8,14 @@ data "aws_ami" "my_ami" {
     }
 }
 
+data "aws_iam_instance_profile" "my_ssm_profile" {
+  name = "EC2-SSM-Role"
+}
+
+data "aws_ssm_parameter" "token" {
+  name = "/devops-bootcamp-2026/tunnel-token"
+}
+
 module "web_server" {
   source  = "terraform-aws-modules/ec2-instance/aws"
   version = "~> 6.0"
@@ -20,6 +28,7 @@ module "web_server" {
   key_name               = "wan-adri-key"
   create_eip = true
   private_ip = "10.0.0.5"
+  iam_instance_profile = data.aws_iam_instance_profile.my_ssm_profile.name
   tags                   = { Name = "web-server" }
 }
 
@@ -34,6 +43,7 @@ module "ansible_server" {
   vpc_security_group_ids = [aws_security_group.private.id]
   key_name               = "wan-adri-key"
   private_ip = "10.0.0.135"
+  iam_instance_profile = data.aws_iam_instance_profile.my_ssm_profile.name
   tags                   = { Name = "ansible-server" }
 }
 
@@ -48,5 +58,6 @@ module "monitoring_server" {
   vpc_security_group_ids = [aws_security_group.private.id]
   key_name               = "wan-adri-key"
   private_ip = "10.0.0.136"
+  iam_instance_profile = data.aws_iam_instance_profile.my_ssm_profile.name
   tags                   = { Name = "monitoring-server" }
 }

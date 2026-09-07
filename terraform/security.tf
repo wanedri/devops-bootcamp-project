@@ -20,7 +20,7 @@ resource "aws_security_group" "public" {
         from_port = 9100
         to_port = 9100
         protocol = "tcp"
-        cidr_blocks = ["10.0.0.128/25"]
+        cidr_blocks = ["10.0.0.136/32"]
     }
 
     egress {
