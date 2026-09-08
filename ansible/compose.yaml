@@ -1,0 +1,39 @@
+services:
+  prometheus:
+    image: prom/prometheus
+    # Bound to localhost only. The monitoring server must have zero inbound
+    # ports open to the world - you reach this through the tunnel, or by
+    # curl'ing from the box itself.
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      # Bind mount: config that Ansible manages on the host, read by the
+      # container. Edit it on the host, restart, done.
+      - ./prometheus.yaml:/etc/prometheus/prometheus.yml
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      # Named volume: data that must outlive the container. Docker manages
+      # where it lives; `docker compose down` keeps it.
+      - grafana-data:/var/lib/grafana
+      # Bind mount again, but for provisioning - this is what wires
+      # Prometheus in as a data source without clicking through the UI.
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    environment:
+      - GF_SERVER_ROOT_URL=https://monitoring.haqqki.com
+    restart: unless-stopped
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    # The tunnel dials OUT through the NAT gateway. Nothing dials in, which
+    # is how monitoring.haqqki.com works with no inbound ports at all.
+    command: tunnel --no-autoupdate run --token ${TUNNEL_TOKEN}
+    restart: unless-stopped
+
+volumes:
+  grafana-data:
