@@ -4,7 +4,7 @@ output "web_server_private_ip" {
 }
 
 output "web_server_public_ip" {
-  description = "Elastic IP of the web server - point web.infratify.com here."
+  description = "Elastic IP of the web server - point web.haqqki.com here."
   value       = module.web_server.public_ip
 }
 

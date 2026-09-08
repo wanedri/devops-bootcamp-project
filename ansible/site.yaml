@@ -1,0 +1,8 @@
+# Convenience wrapper - runs everything in the right order.
+# You can also run each playbook on its own while developing:
+#   ansible-playbook playbook-app.yaml
+
+- import_playbook: playbook-common.yaml
+- import_playbook: playbook-app.yaml
+- import_playbook: playbook-exporter.yaml
+- import_playbook: playbook-stack.yaml

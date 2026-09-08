@@ -1,0 +1,42 @@
+- name: Sediakan tooling asas pada semua node
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Pasang pakej asas
+      apt:
+        name:
+          - git
+          - unzip
+          - python3-docker
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+
+    # The AWS CLI is how both nodes talk to AWS using their instance role:
+    # the web server gets an ECR password, the monitoring server reads the
+    # tunnel token. Ubuntu's packaged version lags, so install v2 directly.
+    - name: Semak sama ada AWS CLI sudah dipasang
+      stat:
+        path: /usr/local/bin/aws
+      register: awscli_binary
+
+    - name: Pasang AWS CLI v2
+      when: not awscli_binary.stat.exists
+      block:
+        - name: Muat turun installer AWS CLI
+          get_url:
+            url: https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip
+            dest: /tmp/awscliv2.zip
+            mode: "0644"
+
+        - name: Buka installer
+          unarchive:
+            src: /tmp/awscliv2.zip
+            dest: /tmp
+            remote_src: true
+
+        - name: Jalankan installer
+          command: /tmp/aws/install
+          args:
+            creates: /usr/local/bin/aws

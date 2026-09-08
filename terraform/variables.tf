@@ -10,6 +10,17 @@ variable "student_name" {
   default     = "adri"
 }
 
+variable "ssh_key_parameter" {
+  description = <<-EOT
+    SSM Parameter Store path holding the wan-adri-key PRIVATE key, as a
+    SecureString. The Ansible controller fetches it at runtime so it can SSH
+    to the web and monitoring servers. Terraform only scopes IAM against this
+    path - it never reads the value.
+  EOT
+  type        = string
+  default     = "/devops-bootcamp-2026/ansible-ssh-key"
+}
+
 variable "cloudflared_token_parameter" {
   description = <<-EOT
     SSM Parameter Store path holding the Cloudflare Tunnel token.

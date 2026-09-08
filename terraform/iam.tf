@@ -35,13 +35,13 @@ resource "aws_iam_role_policy_attachment" "web_ssm" {
   policy_arn = local.ssm_core_policy
 }
 
-# The web server pulls its own image at deploy time.
-# NOTE: read-only per the spec. If you end up building and pushing the image
-# *on this box* rather than elsewhere, this needs to become
-# AmazonEC2ContainerRegistryPowerUser - ReadOnly cannot push.
+# The web server both builds the image and runs it, so it needs push as well
+# as pull. PowerUser grants both on ECR (but no repository administration).
+# The worksheet says "read", which only covers the pull half - swap this back
+# to AmazonEC2ContainerRegistryReadOnly if you move the build elsewhere.
 resource "aws_iam_role_policy_attachment" "web_ecr" {
   role       = aws_iam_role.web.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser"
 }
 
 resource "aws_iam_instance_profile" "web" {
@@ -61,6 +61,39 @@ resource "aws_iam_role" "ansible" {
 resource "aws_iam_role_policy_attachment" "ansible_ssm" {
   role       = aws_iam_role.ansible.name
   policy_arn = local.ssm_core_policy
+}
+
+# The controller reaches its targets over SSH, so it needs the private key for
+# wan-adri-key. Rather than baking a secret into an image or committing it,
+# the key lives in Parameter Store as a SecureString and the controller pulls
+# it at first run - same pattern as the tunnel token on the monitoring box.
+data "aws_iam_policy_document" "ansible_ssh_key" {
+  statement {
+    sid     = "ReadAnsibleSshKey"
+    actions = ["ssm:GetParameter", "ssm:GetParameters"]
+
+    resources = [
+      "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.my_account.account_id}:parameter${var.ssh_key_parameter}",
+    ]
+  }
+
+  statement {
+    sid       = "DecryptSecureStringViaSSM"
+    actions   = ["kms:Decrypt"]
+    resources = ["*"]
+
+    condition {
+      test     = "StringEquals"
+      variable = "kms:ViaService"
+      values   = ["ssm.${var.aws_region}.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role_policy" "ansible_ssh_key" {
+  name   = "devops-ansible-ssh-key"
+  role   = aws_iam_role.ansible.id
+  policy = data.aws_iam_policy_document.ansible_ssh_key.json
 }
 
 resource "aws_iam_instance_profile" "ansible" {

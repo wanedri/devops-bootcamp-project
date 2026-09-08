@@ -1,0 +1,11 @@
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    # Service name from compose.yaml - both containers share a network,
+    # so this resolves without any IP or published port.
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false

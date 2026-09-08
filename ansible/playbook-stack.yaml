@@ -1,0 +1,84 @@
+- name: Naikkan stack pemantauan
+  hosts: monitoring
+  become: true
+
+  vars:
+    docker_users: [ubuntu]
+    stack_dir: /opt/monitoring
+
+  roles:
+    - geerlingguy.docker
+
+  tasks:
+    - name: Cipta folder stack
+      file:
+        path: "{{ stack_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Cipta folder provisioning Grafana
+      file:
+        path: "{{ stack_dir }}/grafana"
+        state: directory
+        mode: "0755"
+
+    - name: Hantar prometheus.yaml
+      template:
+        src: prometheus.yaml.j2
+        dest: "{{ stack_dir }}/prometheus.yaml"
+        mode: "0644"
+      register: prometheus_config
+
+    - name: Hantar compose.yaml
+      copy:
+        src: compose.yaml
+        dest: "{{ stack_dir }}/compose.yaml"
+        mode: "0644"
+      register: compose_config
+
+    - name: Hantar provisioning dan dashboard Grafana
+      copy:
+        src: grafana/
+        dest: "{{ stack_dir }}/grafana/"
+        mode: "0644"
+        directory_mode: "0755"
+      register: grafana_config
+
+    # Read at runtime by the instance role - the token never touches
+    # Terraform state or this repo.
+    - name: Ambil token tunnel dari Parameter Store
+      shell:
+        cmd: >-
+          aws ssm get-parameter
+          --name {{ tunnel_token_parameter }}
+          --with-decryption
+          --query Parameter.Value
+          --output text
+          --region {{ aws_region }}
+        executable: /bin/bash
+      register: tunnel_token
+      changed_when: false
+      no_log: true
+
+    - name: Tulis fail .env untuk compose
+      copy:
+        content: "TUNNEL_TOKEN={{ tunnel_token.stdout | trim }}\n"
+        dest: "{{ stack_dir }}/.env"
+        mode: "0600"
+      no_log: true
+      register: env_file
+
+    - name: Naikkan container
+      command: docker compose up -d
+      args:
+        chdir: "{{ stack_dir }}"
+      register: compose_up
+      # Only reports changed when compose actually did something, so a second
+      # run of this playbook is clean.
+      changed_when: "'Started' in compose_up.stderr or 'Created' in compose_up.stderr or 'Recreated' in compose_up.stderr"
+
+    - name: Tunggu Grafana menjawab
+      wait_for:
+        host: 127.0.0.1
+        port: 3000
+        timeout: 90

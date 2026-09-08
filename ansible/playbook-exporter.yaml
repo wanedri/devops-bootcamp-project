@@ -1,0 +1,8 @@
+- name: Pasang node_exporter
+  hosts: web
+  become: true
+  roles:
+    - prometheus.prometheus.node_exporter
+
+# Only the web server is a scrape target - the spec says port 9100 is reachable
+# from 10.0.0.136 alone, and devops-public-sg enforces exactly that.

@@ -1,0 +1,16 @@
+---
+# Install with:  ansible-galaxy install -r requirements.yml
+
+roles:
+  # Named explicitly in the project spec.
+  - name: geerlingguy.docker
+
+collections:
+  # node_exporter role - the same one used in the course exporter lesson.
+  - name: prometheus.prometheus
+
+  # 3.6.0 is the floor: docker_image_build / docker_image_push were split out
+  # of docker_image there, and playbook-app.yaml uses them. The old build
+  # support in docker_image was removed in 4.0.0, so this bound matters.
+  - name: community.docker
+    version: ">=3.6.0"

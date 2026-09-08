@@ -1,0 +1,23 @@
+---
+aws_region: ap-southeast-1
+
+# From `terraform output ecr_registry_url` (your 12-digit account id).
+aws_account_id: "381491983982"
+
+ecr_registry: "{{ aws_account_id }}.dkr.ecr.{{ aws_region }}.amazonaws.com"
+ecr_repository: "devops-bootcamp/final-project-adri"
+ecr_image: "{{ ecr_registry }}/{{ ecr_repository }}"
+image_tag: "latest"
+
+# Pinned in Terraform via private_ip, so these are stable across rebuilds.
+web_server_ip: "10.0.0.5"
+monitoring_server_ip: "10.0.0.136"
+
+# The bootcamp slides say infratify.com; this project uses haqqki.com.
+base_domain: "haqqki.com"
+web_hostname: "web.{{ base_domain }}"
+monitoring_hostname: "monitoring.{{ base_domain }}"
+
+# Where the monitoring server reads its Cloudflare Tunnel token at runtime.
+# Terraform never reads this, so the token stays out of tfstate.
+tunnel_token_parameter: "/devops-bootcamp-2026/tunnel-token"

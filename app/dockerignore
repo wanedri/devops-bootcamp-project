@@ -1,0 +1,11 @@
+# Copied to the build context as .dockerignore by the `app` Ansible role.
+#
+# Note that .git is deliberately NOT excluded - vite.config.js reads the
+# commit SHA from it at build time.
+
+node_modules
+dist
+*.log
+.DS_Store
+.env
+.env.*

@@ -1,0 +1,3 @@
+# Export your dashboard from the Grafana UI (Share > Export > Save to file)
+# and drop the .json here. It will be provisioned automatically on the next
+# run of playbook-stack.yaml.
