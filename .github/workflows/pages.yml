@@ -1,0 +1,62 @@
+name: Pages — publish README
+
+# The project's required CI/CD: the README is rendered to HTML and published as
+# a public page on every push that changes it. No manual step, no committed
+# HTML - the page is always whatever README.md currently says.
+#
+# Requires: Settings > Pages > Source set to "GitHub Actions".
+on:
+  push:
+    branches: [master]
+    paths:
+      - "README.md"
+      - "scripts/render-readme.mjs"
+      - "package.json"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write # publish to Pages
+  id-token: write # prove to Pages the deployment came from this workflow
+
+# Never let two publishes race. Unlike CI, in-progress runs are not cancelled -
+# a half-finished deployment is worse than a slightly stale one.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Render
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install the Markdown renderer
+        run: npm install
+
+      - name: Render README.md to site/index.html
+        run: npm run docs:build
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    name: Publish
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

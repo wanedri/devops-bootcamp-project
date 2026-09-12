@@ -1,12 +1,9 @@
-- name: Bina dan jalankan aplikasi ship
+- name: Jalankan aplikasi ship dari imej ECR
   hosts: web
   become: true
 
   vars:
     docker_users: [ubuntu]
-    app_repo_url: "https://github.com/wanedri/ship.git"
-    app_repo_version: "main"
-    app_src_dir: /opt/ship
     app_container_name: ship
     app_host_port: 80
 
@@ -14,40 +11,6 @@
     - geerlingguy.docker
 
   tasks:
-    - name: Klon repo aplikasi
-      git:
-        repo: "{{ app_repo_url }}"
-        dest: "{{ app_src_dir }}"
-        version: "{{ app_repo_version }}"
-      register: app_checkout
-
-    - name: Hantar Dockerfile ke build context
-      copy:
-        src: ../app/Dockerfile
-        dest: "{{ app_src_dir }}/Dockerfile"
-        mode: "0644"
-      register: app_dockerfile
-
-    - name: Hantar .dockerignore ke build context
-      copy:
-        src: ../app/dockerignore
-        dest: "{{ app_src_dir }}/.dockerignore"
-        mode: "0644"
-      register: app_dockerignore
-
-    # Rebuild only when something that affects the image changed, so a second
-    # run of this playbook reports zero changes.
-    - name: Bina imej aplikasi
-      community.docker.docker_image_build:
-        name: "{{ ecr_image }}"
-        tag: "{{ image_tag }}"
-        path: "{{ app_src_dir }}"
-        rebuild: >-
-          {{ 'always'
-             if (app_checkout.changed or app_dockerfile.changed or app_dockerignore.changed)
-             else 'never' }}
-      register: app_build
-
     # Password comes from the instance role via the metadata service.
     # No access keys on disk.
     - name: Log masuk ke ECR
@@ -57,14 +20,23 @@
           aws ecr get-login-password --region {{ aws_region }}
           | docker login --username AWS --password-stdin {{ ecr_registry }}
         executable: /bin/bash
+      register: ecr_login
+      until: ecr_login.rc == 0
+      retries: 6
+      delay: 10
       changed_when: false
 
-    - name: Tolak imej ke ECR
-      community.docker.docker_image_push:
+    # The image is built and pushed by GitHub Actions (.github/workflows/
+    # deploy.yml). This host only pulls, which is why its IAM role needs
+    # ECR read and nothing more.
+    - name: Tarik imej dari ECR
+      community.docker.docker_image_pull:
         name: "{{ ecr_image }}"
         tag: "{{ image_tag }}"
-      when: app_build.changed
+      register: app_pull
 
+    # Reports changed only when the pulled image differs from the running
+    # container's image, so a second run with no new build is a no-op.
     - name: Jalankan container aplikasi
       community.docker.docker_container:
         name: "{{ app_container_name }}"

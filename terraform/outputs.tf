@@ -23,6 +23,11 @@ output "ecr_repository_url" {
   value       = aws_ecr_repository.app.repository_url
 }
 
+output "github_actions_role_arn" {
+  description = "Set this as the repository variable AWS_ROLE_ARN in GitHub (Settings > Secrets and variables > Actions > Variables)."
+  value       = aws_iam_role.github_actions.arn
+}
+
 output "ecr_registry_url" {
   description = "Registry host, for `docker login`. Built from the account id rather than hardcoded."
   value       = "${data.aws_caller_identity.my_account.account_id}.dkr.ecr.${var.aws_region}.amazonaws.com"

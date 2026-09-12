@@ -1,0 +1,13 @@
+{
+  "name": "devops-bootcamp-project-docs",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Renders README.md into the GitHub Pages site. Nothing to do with the deployed application, which lives in its own repository.",
+  "scripts": {
+    "docs:build": "node scripts/render-readme.mjs"
+  },
+  "devDependencies": {
+    "marked": "^15.0.0"
+  }
+}

@@ -35,13 +35,13 @@ resource "aws_iam_role_policy_attachment" "web_ssm" {
   policy_arn = local.ssm_core_policy
 }
 
-# The web server both builds the image and runs it, so it needs push as well
-# as pull. PowerUser grants both on ECR (but no repository administration).
-# The worksheet says "read", which only covers the pull half - swap this back
-# to AmazonEC2ContainerRegistryReadOnly if you move the build elsewhere.
+# Read-only is deliberate and sufficient: the image is built and pushed by
+# GitHub Actions (which assumes devops-github-actions-role), so this host only
+# ever pulls. A web server that could overwrite its own image in the registry
+# would be a needless blast radius.
 resource "aws_iam_role_policy_attachment" "web_ecr" {
   role       = aws_iam_role.web.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser"
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
 }
 
 resource "aws_iam_instance_profile" "web" {

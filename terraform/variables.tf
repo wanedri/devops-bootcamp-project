@@ -10,6 +10,22 @@ variable "student_name" {
   default     = "adri"
 }
 
+variable "github_repository" {
+  description = "owner/name of the GitHub repository allowed to assume the deployment role."
+  type        = string
+  default     = "wanedri/devops-bootcamp-project"
+}
+
+variable "create_github_oidc_provider" {
+  description = <<-EOT
+    Create the GitHub OIDC provider. Only one may exist per AWS account, so set
+    this to false if the account already has one and it will be looked up
+    instead.
+  EOT
+  type        = bool
+  default     = true
+}
+
 variable "ssh_key_parameter" {
   description = <<-EOT
     SSM Parameter Store path holding the wan-adri-key PRIVATE key, as a

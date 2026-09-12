@@ -51,6 +51,12 @@ id_ed25519.*
 credentials
 aws_credentials
 
+# ---------- Docs site build ----------
+node_modules/
+# Rendered by scripts/render-readme.mjs and published by Actions.
+# Never committed - the README is the source of truth.
+site/
+
 # ---------- Editor / OS ----------
 .vscode/
 .idea/

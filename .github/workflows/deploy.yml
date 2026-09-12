@@ -1,0 +1,82 @@
+name: Deploy — push image to ECR
+
+# Builds the application image and pushes it to the private ECR registry.
+#
+# Authentication is via OIDC: GitHub presents a short-lived token, AWS trades it
+# for temporary credentials scoped to one role. There are no access keys stored
+# in this repository.
+#
+# Requires a repository variable AWS_ROLE_ARN, from:
+#   terraform output github_actions_role_arn
+on:
+  push:
+    branches: [master]
+    paths:
+      - "app/**"
+      - ".github/workflows/deploy.yml"
+  workflow_dispatch:
+
+permissions:
+  id-token: write # required to request the OIDC token
+  contents: read
+
+env:
+  AWS_REGION: ap-southeast-1
+  ECR_REPOSITORY: devops-bootcamp/final-project-adri
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-push:
+    name: Build and push
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check out the application
+        uses: actions/checkout@v4
+        with:
+          repository: wanedri/ship
+          path: ship
+          # Full history so vite.config.js can stamp a real commit SHA.
+          fetch-depth: 0
+
+      - name: Assemble the build context
+        run: |
+          cp app/Dockerfile ship/Dockerfile
+          cp app/dockerignore ship/.dockerignore
+
+      - name: Assume the deployment role
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # Two tags: the commit SHA so any build can be identified and rolled back
+      # to, and `latest` because that is what the Ansible playbook deploys.
+      - name: Build and push
+        env:
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+        run: |
+          IMAGE="$REGISTRY/$ECR_REPOSITORY"
+          docker build -t "$IMAGE:${{ github.sha }}" -t "$IMAGE:latest" ship
+          docker push "$IMAGE:${{ github.sha }}"
+          docker push "$IMAGE:latest"
+          echo "Pushed $IMAGE:${{ github.sha }}"
+
+      - name: Summary
+        run: |
+          {
+            echo "### Image pushed"
+            echo ""
+            echo "- repository: \`$ECR_REPOSITORY\`"
+            echo "- tags: \`${{ github.sha }}\`, \`latest\`"
+            echo ""
+            echo "Deploy it with: \`ansible-playbook playbook-app.yaml\` on the controller."
+          } >> "$GITHUB_STEP_SUMMARY"
